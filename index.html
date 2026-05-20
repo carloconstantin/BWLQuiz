@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="dark">
+<title>Schul-IT Notfall · Ticket #2026-0517 · Netzint</title>
+<style>
+  :root {
+    --navy:#0B1F3A;
+    --navy-deep:#06152A;
+    --accent:#3FA7E1;
+    --accent-strong:#0081C6;
+    --light:#E6F2FA;
+    --text:#E8EEF4;
+    --muted:#94A8BC;
+    --line:#1B3458;
+    --ok:#3DDB8F;
+    --err:#FF6B6B;
+    --warn:#FFB547;
+    --mono:'SFMono-Regular','Menlo','Consolas','Liberation Mono',monospace;
+    --sans:-apple-system,'Segoe UI','Inter','Helvetica Neue',sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:var(--navy-deep);
+    background-image:radial-gradient(circle at 20% 0%,#102849 0%,var(--navy-deep) 60%);
+    color:var(--text);
+    font-family:var(--sans);
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .app{max-width:520px;margin:0 auto;padding:20px 18px 80px;}
+
+  /* Top header bar - like an IT dashboard */
+  .topbar{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 14px;border:1px solid var(--line);border-radius:10px;
+    background:rgba(11,31,58,.7);backdrop-filter:blur(6px);
+    margin-bottom:18px;
+  }
+  .brand{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.6px}
+  .brand .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  .brand .name{font-size:14px}
+  .status{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+  .status .pulse{width:7px;height:7px;border-radius:50%;background:var(--err);animation:pulse 1.2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* Intro screen */
+  .intro h1{font-size:30px;line-height:1.1;letter-spacing:-.5px;margin-bottom:10px}
+  .intro h1 .accent{color:var(--accent)}
+  .intro .sub{color:var(--muted);font-size:15px;margin-bottom:20px;line-height:1.45}
+  .ticket-preview{
+    border:1px solid var(--line);border-radius:14px;overflow:hidden;
+    background:#0E2447;margin-bottom:22px;
+  }
+  .ticket-head{
+    background:linear-gradient(180deg,#0F2A55,#0B2148);
+    padding:12px 14px;border-bottom:1px solid var(--line);
+    display:flex;justify-content:space-between;align-items:center;
+    font-family:var(--mono);font-size:11px;color:var(--muted);
+  }
+  .ticket-head .id{color:var(--accent);font-weight:600}
+  .ticket-body{padding:14px}
+  .ticket-body .meta{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;margin-bottom:10px;font-family:var(--mono)}
+  .ticket-body .meta dt{color:var(--muted)}
+  .ticket-body .meta dd{color:var(--text)}
+  .ticket-body .summary{
+    margin-top:10px;padding-top:10px;border-top:1px dashed var(--line);
+    font-size:15px;line-height:1.45;
+  }
+  .severity{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:3px 8px;border-radius:999px;font-family:var(--mono);font-size:11px;letter-spacing:.5px;
+    background:rgba(255,107,107,.12);color:var(--err);border:1px solid rgba(255,107,107,.35);
+  }
+
+  /* Buttons */
+  .btn{
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    width:100%;padding:14px 16px;border:none;border-radius:12px;
+    font-size:16px;font-weight:600;cursor:pointer;
+    transition:transform .06s ease, background .12s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:active{transform:translateY(1px)}
+  .btn.primary{background:var(--accent);color:#06152A}
+  .btn.primary:hover{background:#5BBEEF}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+
+  /* Progress */
+  .progress-wrap{
+    display:flex;align-items:center;gap:10px;margin:0 0 16px;
+    font-family:var(--mono);font-size:11px;color:var(--muted);
+  }
+  .progress-track{flex:1;height:6px;background:var(--line);border-radius:99px;overflow:hidden}
+  .progress-fill{height:100%;background:var(--accent);transition:width .35s ease;border-radius:99px}
+
+  /* Question card */
+  .qcard{
+    background:#0E2447;border:1px solid var(--line);border-radius:14px;
+    padding:18px 16px 14px;
+  }
+  .qkind{
+    display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;
+    letter-spacing:.7px;font-family:var(--mono);text-transform:uppercase;
+    margin-bottom:10px;
+  }
+  .qkind.diag{background:rgba(63,167,225,.15);color:var(--accent);border:1px solid rgba(63,167,225,.4)}
+  .qkind.bwl{background:rgba(255,181,71,.12);color:var(--warn);border:1px solid rgba(255,181,71,.4)}
+  .qtitle{font-size:18px;line-height:1.35;font-weight:600;margin-bottom:6px}
+  .qbody{font-size:14px;color:var(--muted);line-height:1.5;margin-bottom:14px}
+  .qbody code{font-family:var(--mono);background:rgba(63,167,225,.1);color:var(--accent);padding:1px 6px;border-radius:6px;font-size:13px}
+
+  .opts{display:flex;flex-direction:column;gap:8px}
+  .opt{
+    text-align:left;
+    background:#0A1E40;border:1px solid var(--line);
+    border-radius:10px;padding:13px 14px;
+    font-size:15px;line-height:1.4;
+    color:var(--text);cursor:pointer;
+    display:flex;gap:10px;align-items:flex-start;
+    -webkit-tap-highlight-color:transparent;
+    transition:border-color .12s ease, background .12s ease;
+  }
+  .opt:hover{border-color:var(--accent)}
+  .opt .letter{
+    flex-shrink:0;width:24px;height:24px;border-radius:6px;
+    background:rgba(63,167,225,.15);color:var(--accent);
+    font-family:var(--mono);font-size:12px;font-weight:700;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .opt.correct{border-color:var(--ok);background:rgba(61,219,143,.08)}
+  .opt.correct .letter{background:rgba(61,219,143,.2);color:var(--ok)}
+  .opt.wrong{border-color:var(--err);background:rgba(255,107,107,.08)}
+  .opt.wrong .letter{background:rgba(255,107,107,.2);color:var(--err)}
+  .opt.disabled{cursor:default;opacity:.55}
+  .opt.disabled:hover{border-color:var(--line)}
+
+  .feedback{
+    margin-top:14px;padding:12px 14px;border-radius:10px;
+    font-size:14px;line-height:1.5;
+    background:rgba(63,167,225,.07);
+    border-left:3px solid var(--accent);
+  }
+  .feedback.good{background:rgba(61,219,143,.07);border-left-color:var(--ok)}
+  .feedback.bad{background:rgba(255,107,107,.07);border-left-color:var(--err)}
+  .feedback strong{color:var(--text)}
+  .feedback .label{font-family:var(--mono);font-size:11px;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;display:block}
+
+  .next-row{margin-top:14px}
+
+  /* Result screen */
+  .result{
+    background:#0E2447;border:1px solid var(--line);border-radius:14px;
+    padding:24px 18px;text-align:center;
+  }
+  .result .score-ring{
+    width:140px;height:140px;border-radius:50%;
+    background:conic-gradient(var(--accent) calc(var(--p)*1%), var(--line) 0);
+    margin:6px auto 14px;display:flex;align-items:center;justify-content:center;
+    position:relative;
+  }
+  .result .score-ring::before{
+    content:'';position:absolute;inset:8px;border-radius:50%;background:#0E2447;
+  }
+  .result .score-num{position:relative;font-size:38px;font-weight:700;font-family:var(--mono)}
+  .result .score-num span{font-size:18px;color:var(--muted)}
+  .result h2{font-size:24px;line-height:1.2;margin-bottom:6px;letter-spacing:-.3px}
+  .result .verdict{color:var(--muted);font-size:14px;margin-bottom:18px;line-height:1.5}
+  .result .reveal{
+    background:rgba(63,167,225,.08);border:1px solid var(--line);
+    border-radius:10px;padding:14px;text-align:left;font-size:14px;
+    line-height:1.5;margin-bottom:16px;
+  }
+  .result .reveal .label{font-family:var(--mono);font-size:11px;letter-spacing:.6px;color:var(--accent);text-transform:uppercase;margin-bottom:6px;display:block}
+  .result .code-box{
+    margin-top:6px;background:#06152A;border:1px solid var(--line);border-radius:10px;
+    padding:14px;font-family:var(--mono);text-align:center;
+  }
+  .result .code-box .clabel{font-size:11px;color:var(--muted);letter-spacing:.6px;margin-bottom:6px}
+  .result .code-box .code{font-size:24px;color:var(--accent);letter-spacing:3px;font-weight:700}
+  .result .small{color:var(--muted);font-size:12px;line-height:1.5;margin-top:14px}
+
+  /* Footer */
+  .foot{
+    text-align:center;color:var(--muted);font-size:11px;
+    margin-top:24px;font-family:var(--mono);letter-spacing:.4px;
+  }
+  .foot a{color:var(--accent);text-decoration:none}
+
+  /* Animations */
+  @keyframes slideIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  .fade-in{animation:slideIn .25s ease both}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="name">Netzint · Service Desk</span>
+    </div>
+    <div class="status">
+      <span class="pulse"></span>
+      <span id="topStatus">P1 · Live</span>
+    </div>
+  </div>
+  <div id="screen"></div>
+  <div class="foot">
+    BWL-Vortrag · Carlo Grötzinger · Netzint GmbH
+  </div>
+</div>
+
+<script>
+/* ============ Game data ============ */
+const ticket = {
+  id: "#2026-0517",
+  client: "Gewerbeschule Freiburg",
+  category: "Schul-IT / Anmeldung",
+  severity: "P1 · KRITISCH",
+  opened: "Mo · 07:55",
+  summary: "Anmeldungen an den Schulrechnern funktionieren nicht. Erste Stunde startet in 5 Minuten.",
+};
+
+const steps = [
+  {
+    kind:"diag", title:"Was machst du als Erstes?",
+    body:"Du bist Carlo, am Servicedesk. Das Ticket leuchtet rot. Eine Mathearbeit beginnt in 5 Minuten.",
+    options:[
+      { t:"Sofort ins Auto springen und zur Schule fahren.",
+        ok:false,
+        fb:"Zu früh. Erst Ursache suchen, sonst stehst du vor Ort und weißt nichts." },
+      { t:"Erst Monitoring + Logs prüfen, dann handeln.",
+        ok:true,
+        fb:"Genau. Ein guter Techniker schaut zuerst auf Status und Logs – nicht ins Auto." },
+      { t:"Schule zurückrufen und fragen, ob's vielleicht weggeht.",
+        ok:false,
+        fb:"P1-Ticket aussitzen ist keine Lösung. Status prüfen ist der erste Schritt." },
+    ],
+  },
+  {
+    kind:"bwl", title:"Vertragsfrage am Rande.",
+    body:"Bevor du loslegst – mit wem hat die Schule eigentlich den Wartungsvertrag geschlossen?",
+    options:[
+      { t:"Mit Maurice Cazautet persönlich.",
+        ok:false,
+        fb:"Nein. Der Geschäftsführer handelt für die GmbH, aber er ist nicht Vertragspartner." },
+      { t:"Mit der Netzint GmbH als juristischer Person.",
+        ok:true,
+        fb:"Korrekt. Eine GmbH ist eine eigene Rechtspersönlichkeit – sie kann selbst Verträge schließen. Mindeststammkapital: 25.000 €." },
+      { t:"Mit dem Servicetechniker, der zuletzt vor Ort war.",
+        ok:false,
+        fb:"Nein. Verträge laufen mit der GmbH, nicht mit einzelnen Mitarbeitern." },
+    ],
+  },
+  {
+    kind:"diag", title:"Im Server-Log steht: LDAP authentication failed.",
+    body:"Du öffnest das Monitoring. Hunderte Fehler pro Sekunde, alle mit dem gleichen Wortlaut. Was bedeutet das?",
+    options:[
+      { t:"Die Internetleitung der Schule ist tot.",
+        ok:false,
+        fb:"Nein. Wenn die Leitung tot wäre, sähen wir gar keine Logs mehr." },
+      { t:"Der zentrale Anmelde-Server (Active Directory) antwortet nicht mehr.",
+        ok:true,
+        fb:"Genau. LDAP ist das Protokoll für AD-Logins. Wenn der AD-Dienst hängt, kann sich niemand mehr einloggen." },
+      { t:"Ein Lehrer hat sein Passwort vergessen.",
+        ok:false,
+        fb:"Wäre nur 1 Fehler. Hier brennen Hunderte – das ist ein Service-Problem." },
+    ],
+  },
+  {
+    kind:"bwl", title:"Welche Produktionsfaktoren setzt du ein?",
+    body:"Du fährst raus, fixt den AD-Server, ersetzt unterwegs ein kaputtes Netzkabel, kommst zurück und schreibst die Doku. Was hast du gerade aufgewendet?",
+    options:[
+      { t:"Nur Arbeit – mein Wissen, meine Zeit.",
+        ok:false,
+        fb:"Knapp daneben. Du hast auch ein Firmenauto und Werkzeug benutzt – das sind Betriebsmittel." },
+      { t:"Arbeit und Betriebsmittel (Auto, Werkzeug, Laptop).",
+        ok:false,
+        fb:"Fast. Das Netzkabel ist ein Werkstoff – Verbrauchsmaterial. Damit hast du alle drei eingesetzt." },
+      { t:"Arbeit + Betriebsmittel + Werkstoffe (alle drei).",
+        ok:true,
+        fb:"Voll richtig. Genau diese drei Produktionsfaktoren – das war Folie 7." },
+    ],
+  },
+  {
+    kind:"bwl", title:"Wie heißt der Prozess, den du gerade durchlaufen hast?",
+    body:"Ticket → Diagnose → Fahrt zur Schule → Reparatur → Übergabe → Doku. Im BWL-Skript heißt das …",
+    options:[
+      { t:"Marketing-Mix.",
+        ok:false,
+        fb:"Nein. Marketing-Mix sind die 4 P's – Produkt, Preis, Platz, Promotion." },
+      { t:"Corporate Identity.",
+        ok:false,
+        fb:"Nein. CI ist das Erscheinungsbild der Firma – Logo, Farben, Auftreten." },
+      { t:"Wertschöpfungskette / Geschäftsprozess.",
+        ok:true,
+        fb:"Korrekt. Das war Folie 9 – Netzints Wertschöpfungskette in Aktion." },
+    ],
+  },
+];
+
+/* ============ State ============ */
+const state = { i: 0, score: 0, answered: false, log: [] };
+
+/* ============ Rendering ============ */
+const screen = document.getElementById('screen');
+
+function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
+function clamp(n,a,b){return Math.max(a,Math.min(b,n))}
+
+function renderIntro(){
+  state.i = 0; state.score = 0; state.answered = false; state.log = [];
+  document.getElementById('topStatus').textContent = "P1 · NEU";
+  screen.innerHTML = '';
+  const node = el(`
+    <div class="intro fade-in">
+      <h1>Montag, <span class="accent">07:55 Uhr</span>.<br>Du bist Carlo.</h1>
+      <p class="sub">Ein Ticket ist gerade reingekommen. Schaffst du es, das Schulnetz wieder hochzubringen – bevor die Mathearbeit anfängt?</p>
+
+      <div class="ticket-preview">
+        <div class="ticket-head"><span>SERVICE-DESK · TICKET</span><span class="id">${ticket.id}</span></div>
+        <div class="ticket-body">
+          <dl class="meta">
+            <dt>Kunde</dt><dd>${ticket.client}</dd>
+            <dt>Kategorie</dt><dd>${ticket.category}</dd>
+            <dt>Eröffnet</dt><dd>${ticket.opened}</dd>
+            <dt>Priorität</dt><dd><span class="severity">● ${ticket.severity}</span></dd>
+          </dl>
+          <p class="summary">${ticket.summary}</p>
+        </div>
+      </div>
+
+      <button class="btn primary" id="start">Ticket übernehmen →</button>
+      <p class="foot" style="margin-top:14px;text-align:center">5 Schritte · ca. 3 Minuten · Diagnose + BWL</p>
+    </div>
+  `);
+  screen.appendChild(node);
+  document.getElementById('start').onclick = ()=>{ renderStep(); };
+}
+
+function renderStep(){
+  state.answered = false;
+  document.getElementById('topStatus').textContent = `P1 · Schritt ${state.i+1}/${steps.length}`;
+  const s = steps[state.i];
+  const pct = Math.round(((state.i)/steps.length)*100);
+  screen.innerHTML = '';
+  const node = el(`
+    <div class="fade-in">
+      <div class="progress-wrap">
+        <span>Ticket ${ticket.id}</span>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
+        <span>${state.i+1}/${steps.length}</span>
+      </div>
+      <div class="qcard">
+        <span class="qkind ${s.kind}">${s.kind==='diag'?'Diagnose':'BWL'}</span>
+        <h2 class="qtitle">${s.title}</h2>
+        <p class="qbody">${s.body}</p>
+        <div class="opts" id="opts"></div>
+        <div id="fb"></div>
+        <div class="next-row" id="nextRow" style="display:none">
+          <button class="btn primary" id="next">${state.i+1<steps.length?'Weiter →':'Ergebnis anzeigen →'}</button>
+        </div>
+      </div>
+    </div>
+  `);
+  screen.appendChild(node);
+
+  const opts = node.querySelector('#opts');
+  const letters = ['A','B','C','D'];
+  s.options.forEach((opt, idx)=>{
+    const b = el(`
+      <button class="opt" data-idx="${idx}">
+        <span class="letter">${letters[idx]}</span>
+        <span>${opt.t}</span>
+      </button>
+    `);
+    b.addEventListener('click', ()=>handleAnswer(idx));
+    opts.appendChild(b);
+  });
+}
+
+function handleAnswer(idx){
+  if(state.answered) return;
+  state.answered = true;
+  const s = steps[state.i];
+  const opts = document.querySelectorAll('#opts .opt');
+  opts.forEach((b,i)=>{
+    b.classList.add('disabled');
+    if(s.options[i].ok) b.classList.add('correct');
+    if(i===idx && !s.options[i].ok) b.classList.add('wrong');
+  });
+  const chosen = s.options[idx];
+  if(chosen.ok) state.score++;
+  state.log.push({ step:state.i, chosen:idx, ok:chosen.ok });
+
+  const fb = document.getElementById('fb');
+  fb.innerHTML = `
+    <div class="feedback ${chosen.ok?'good':'bad'}">
+      <span class="label">${chosen.ok?'RICHTIG':'NICHT GANZ'}</span>
+      <span>${chosen.fb}</span>
+    </div>
+  `;
+  document.getElementById('nextRow').style.display = 'block';
+  document.getElementById('next').onclick = ()=>{
+    state.i++;
+    if(state.i >= steps.length){ renderResult(); }
+    else { renderStep(); }
+  };
+}
+
+function makeCode(score){
+  // Short shareable code: NZ-XYZW where score is encoded
+  const seed = Date.now().toString(36).slice(-4).toUpperCase();
+  return `NZ-${score}${seed}`;
+}
+
+function renderResult(){
+  document.getElementById('topStatus').textContent = `RESOLVED · ${state.score}/${steps.length}`;
+  const pct = Math.round((state.score/steps.length)*100);
+  let verdict;
+  if(state.score===5) verdict = "Vollständig gelöst. Die Mathearbeit findet pünktlich statt.";
+  else if(state.score===4) verdict = "Fast perfekt. Mit ein bisschen Mehr-Doku wärst du durchgekommen.";
+  else if(state.score===3) verdict = "Reicht knapp – das Schulnetz läuft, aber der Lehrer schaut komisch.";
+  else if(state.score===2) verdict = "Kollege musste eingreifen. Trotzdem: gut mitgespielt.";
+  else verdict = "Diagnose dauert zu lange – die Klausur wird verschoben. Probier’s nochmal.";
+
+  const code = makeCode(state.score);
+
+  screen.innerHTML = '';
+  const node = el(`
+    <div class="result fade-in">
+      <div class="score-ring" style="--p:${pct}">
+        <div class="score-num">${state.score}<span>/${steps.length}</span></div>
+      </div>
+      <h2>Ticket ${ticket.id} – geschlossen.</h2>
+      <p class="verdict">${verdict}</p>
+      <div class="reveal">
+        <span class="label">Cliffhanger-Auflösung</span>
+        07:55 Uhr, Schulnetz fällt aus → Ticket bei Netzint → Servicedesk übernimmt → Diagnose, Lösung → Schule schreibt ihre Mathearbeit.<br><br>
+        <strong>Genau dafür gibt es uns.</strong>
+      </div>
+      <div class="code-box">
+        <div class="clabel">DEIN CODE FÜR CARLO</div>
+        <div class="code">${code}</div>
+      </div>
+      <p class="small">Zeig Carlo deinen Code am Ende des Vortrags. Wer 5/5 hat, gewinnt.</p>
+      <div style="margin-top:18px;display:flex;gap:10px">
+        <button class="btn ghost" id="again" style="flex:1">Nochmal</button>
+      </div>
+    </div>
+  `);
+  screen.appendChild(node);
+  document.getElementById('again').onclick = ()=>renderIntro();
+}
+
+renderIntro();
+</script>
+</body>
+</html>
